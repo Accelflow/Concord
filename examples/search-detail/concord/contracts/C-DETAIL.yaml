@@ -1,0 +1,11 @@
+schema_version: 2
+definition:
+  id: C-DETAIL
+  version: "1"
+  description: Document detail returns 404 for a document the viewer may not read.
+  scope: Document detail API
+  assumptions: [The viewer identity is already authenticated.]
+  preconditions: [The detail request includes a document ID.]
+  responsibility: Return 404 for an unavailable document and return the title when access is allowed.
+  approval_status: approved
+  requirement_ids: [R-PRIVATE]

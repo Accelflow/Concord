@@ -1,0 +1,3 @@
+# Preserve verbatim command logs, including test-harness spacing.
+evidence/*.log whitespace=-trailing-space,-blank-at-eof
+evidence/**/*.log whitespace=-trailing-space,-blank-at-eof

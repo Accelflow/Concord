@@ -1,0 +1,11 @@
+schema_version: 2
+definition:
+  id: C-SEARCH
+  version: "1"
+  description: Search returns only titles that the viewer may read.
+  scope: Document search API
+  assumptions: [The viewer identity is already authenticated.]
+  preconditions: [The search receives the documents and viewer.]
+  responsibility: Exclude unreadable document titles from the search results.
+  approval_status: approved
+  requirement_ids: [R-PRIVATE]

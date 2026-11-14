@@ -1,0 +1,15 @@
+schema_version: 2
+definition:
+  id: REL-DETAIL-PRIVATE
+  contract_id: C-DETAIL
+  property_id: P-PRIVATE
+  relation: requires
+  applicability:
+    condition: The viewer requests a private document owned by another user.
+  implementations: [src/detail.ts]
+  obligations:
+    - id: O-DETAIL-PRIVATE
+      method: api
+      tests:
+        - file: tests/detail.test.ts
+          name: detail > hides private data

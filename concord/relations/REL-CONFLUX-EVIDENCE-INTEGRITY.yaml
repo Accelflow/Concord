@@ -1,0 +1,16 @@
+schema_version: 2
+definition:
+  id: REL-CONFLUX-EVIDENCE-INTEGRITY
+  contract_id: C-VERIFICATION-EVIDENCE
+  property_id: P-CONFLUX-EVIDENCE-INTEGRITY
+  relation: requires
+  applicability:
+    condition: 同じ計画IDでの実行と、Conflux標準検証の結果照合を確認する
+  implementations: [src/main.rs, src/engine.rs, scripts/conflux_link.py]
+  obligations:
+    - id: O-CONFLUX-EVIDENCE-INTEGRITY
+      method: integration
+      tests:
+        - file: tests/commands.rs
+          name: expected_plan_prevents_execution_after_input_changes
+      commands: [conflux-evidence-guards]

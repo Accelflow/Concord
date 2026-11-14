@@ -1,0 +1,21 @@
+/target/
+/.concord/
+.env
+.env.*
+!.env.example
+.DS_Store
+/evidence/implementation-budget.json.lock
+
+/.codesynapse/
+/evidence/contract-property-budget.json.lock
+/evidence/check-budget.json.lock
+/evidence/relation-budget.json.lock
+
+/evidence/self-use-budget.json.lock
+
+/evidence/rust-runner-budget.json.lock
+
+/evidence/rust-impact-budget.json.lock
+
+# Python verification helper bytecode is a local output.
+__pycache__/

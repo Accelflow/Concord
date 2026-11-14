@@ -1,0 +1,58 @@
+schema_version: 2
+requirements:
+  - id: R-PRIVATE
+    description: 非公開情報を権限外のユーザーに表示しない
+contracts:
+  - id: C-SEARCH
+    description: 商品検索の約束
+    version: "1"
+    scope: 商品検索API
+    assumptions: [認証済みユーザーの権限情報を受け取る]
+    preconditions: [検索リクエストが有効である]
+    responsibility: 商品検索の応答を制御する
+    approval_status: proposed
+    requirement_ids: [R-PRIVATE]
+  - id: C-DETAIL
+    description: 商品詳細の約束
+    version: "1"
+    scope: 商品詳細API
+    assumptions: [認証済みユーザーの権限情報を受け取る]
+    preconditions: [商品IDが有効である]
+    responsibility: 商品詳細の応答を制御する
+    approval_status: proposed
+    requirement_ids: [R-PRIVATE]
+properties:
+  - id: P-PRIVATE
+    version: "1"
+    description: 権限外のユーザーに非公開情報を表示しない
+    approval_status: proposed
+    implementations: []
+    depends_on: []
+    obligations: []
+relations:
+  - id: REL-SEARCH-PRIVATE
+    contract_id: C-SEARCH
+    property_id: P-PRIVATE
+    relation: requires
+    applicability:
+      condition: 商品検索リクエストのユーザーが対象商品の閲覧権限を持たない
+    implementations: [src/search.ts]
+    obligations:
+      - id: O-SEARCH-PRIVATE
+        method: api
+        tests:
+          - file: tests/search.test.ts
+            name: search > hides private data
+  - id: REL-DETAIL-PRIVATE
+    contract_id: C-DETAIL
+    property_id: P-PRIVATE
+    relation: requires
+    applicability:
+      condition: 商品詳細リクエストのユーザーが対象商品の閲覧権限を持たない
+    implementations: [src/detail.ts]
+    obligations:
+      - id: O-DETAIL-PRIVATE
+        method: api
+        tests:
+          - file: tests/detail.test.ts
+            name: detail > hides private data

@@ -1,0 +1,22 @@
+schema_version: 2
+definition:
+  id: "REL-DEFINITION-READONLY"
+  contract_id: "C-DEFINITION"
+  property_id: "P-READ-ONLY"
+  relation: "requires"
+  applicability:
+    condition: "このリポジトリの標準Rust回帰テストが、fixtureまたは一時ディレクトリ内で対象CLIの振る舞いを検証する"
+  implementations:
+    - "src/definition_check.rs"
+    - "src/main.rs"
+  obligations:
+    -
+      id: "O-DEFINITION-READONLY"
+      method: "integration"
+      tests:
+        -
+          file: "tests/definition_check.rs"
+          name: "check_works_without_git_node_config_or_database_and_is_read_only"
+        -
+          file: "tests/definition_check.rs"
+          name: "configured_check_validates_command_references_and_inputs_without_running_tools"

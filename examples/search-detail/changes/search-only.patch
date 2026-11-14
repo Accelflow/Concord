@@ -1,0 +1,8 @@
+--- a/src/search.ts
++++ b/src/search.ts
+@@ -3,3 +3,4 @@
+ export function search(documents: Document[], viewer: Viewer): string[] {
+-  return documents.filter((document) => canRead(viewer, document)).map((document) => document.title);
++  const readableDocuments = documents.filter((document) => canRead(viewer, document));
++  return readableDocuments.map((document) => document.title);
+ }

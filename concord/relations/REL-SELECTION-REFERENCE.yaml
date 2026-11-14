@@ -1,0 +1,19 @@
+schema_version: 2
+definition:
+  id: "REL-SELECTION-REFERENCE"
+  contract_id: "C-SELECTION"
+  property_id: "P-REFERENCE-INTEGRITY"
+  relation: "requires"
+  applicability:
+    condition: "このリポジトリの標準Rust回帰テストが、fixtureまたは一時ディレクトリ内で対象CLIの振る舞いを検証する"
+  implementations:
+    - "src/engine.rs"
+    - "src/definitions.rs"
+  obligations:
+    -
+      id: "O-SELECTION-REFERENCE"
+      method: "integration"
+      tests:
+        -
+          file: "tests/cli_e2e.rs"
+          name: "invalid_contract_and_property_references_fail_closed"

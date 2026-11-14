@@ -1,0 +1,15 @@
+schema_version: 2
+definition:
+  id: REL-SEARCH-PRIVATE
+  contract_id: C-SEARCH
+  property_id: P-PRIVATE
+  relation: requires
+  applicability:
+    condition: The search results would otherwise include a private document owned by another user.
+  implementations: [src/search.ts]
+  obligations:
+    - id: O-SEARCH-PRIVATE
+      method: api
+      tests:
+        - file: tests/search.test.ts
+          name: search > hides private data
