@@ -1,0 +1,4 @@
+schema_version: 2
+definition:
+  id: R-PRIVATE
+  description: Keep private documents visible only to their owners.

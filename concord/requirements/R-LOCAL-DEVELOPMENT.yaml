@@ -1,0 +1,4 @@
+schema_version: 2
+definition:
+  id: "R-LOCAL-DEVELOPMENT"
+  description: "開発者がローカルで定義と参照を確認し、根拠のあるテスト選択と、入力・条件に結び付いた検証結果を得られる"

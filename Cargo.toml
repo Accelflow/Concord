@@ -1,0 +1,25 @@
+[package]
+name = "concord"
+version = "0.5.0"
+edition = "2024"
+rust-version = "1.97"
+publish = false
+
+[dependencies]
+anyhow = "=1.0.104"
+clap = { version = "=4.6.7", features = ["derive"] }
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
+serde-saphyr = "=2.0.0"
+toml = "=0.9.8"
+rusqlite = { version = "=0.41.1", features = ["bundled"] }
+sha2 = "=0.11.1"
+tree-sitter = "=0.27.1"
+tree-sitter-typescript = "=0.23.2"
+tree-sitter-javascript = "=0.25.0"
+libc = "=0.2.191"
+regex = "=1.13.1"
+ctrlc = "=3.5.2"
+
+[dev-dependencies]
+tempfile = "=3.27.0"

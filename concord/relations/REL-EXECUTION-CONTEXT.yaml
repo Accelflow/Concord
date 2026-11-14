@@ -1,0 +1,42 @@
+schema_version: 2
+definition:
+  id: "REL-EXECUTION-CONTEXT"
+  contract_id: "C-EXECUTION"
+  property_id: "P-RELATION-CONTEXT"
+  relation: "requires"
+  applicability:
+    condition: "このリポジトリの標準Rust回帰テストが、fixtureまたは一時ディレクトリ内で対象CLIの振る舞いを検証する"
+  implementations:
+    - "src/cargo_runner.rs"
+    - "src/planning.rs"
+    - "src/model.rs"
+    - "src/engine.rs"
+    - "src/runner.rs"
+  obligations:
+    -
+      id: "O-EXECUTION-CONTEXT"
+      method: "integration"
+      tests:
+        -
+          file: "tests/relations.rs"
+          name: "shared_property_has_independent_contract_results_and_provenance"
+        -
+          file: "tests/relations.rs"
+          name: "an_unapproved_contract_does_not_taint_another_contract_result"
+        -
+          file: "tests/rust_cli.rs"
+          name: "cargo_scan_plan_verify_explain_and_relation_results"
+    -
+      id: "O-VERIFY-CASE-IDENTITY"
+      method: "e2e"
+      tests:
+        - file: "tests/cli_e2e.rs"
+          name: "failure_matches_full_run_and_timings_are_recorded"
+        - file: "tests/cli_e2e.rs"
+          name: "unexpected_executed_cases_still_fail_closed"
+        - file: "tests/rust_cli.rs"
+          name: "cargo_failed_and_ignored_obligations_are_not_success"
+        - file: "tests/rust_cli.rs"
+          name: "cargo_scan_plan_verify_explain_and_relation_results"
+        - file: "tests/cli_e2e.rs"
+          name: "oss_demo_selects_search_and_explains_detail_failure"

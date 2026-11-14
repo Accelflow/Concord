@@ -1,0 +1,7 @@
+--- a/src/access.ts
++++ b/src/access.ts
+@@ -4,3 +4,3 @@
+ export function canRead(viewer: Viewer, document: Document): boolean {
+-  return viewer.id === document.owner;
++  return viewer.support || viewer.id === document.owner;
+ }

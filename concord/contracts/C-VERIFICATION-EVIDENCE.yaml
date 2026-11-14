@@ -1,0 +1,11 @@
+schema_version: 2
+definition:
+  id: C-VERIFICATION-EVIDENCE
+  description: ケース報告とConfluxの証跡を検証責務まで照合する
+  version: "1"
+  scope: 構造化報告を宣言したコマンドと、固定ソースで実行するConflux標準検証
+  assumptions: [対象リポジトリ・登録コマンド・Confluxの登録runnerを信頼する]
+  preconditions: [Concordが指定した報告パスとConflux標準検証の実行コンテキストを使う]
+  responsibility: 必須ケースの欠落・重複・skipを検出し、計画・ソース・責務・元報告が一致する実行結果を返す
+  approval_status: approved
+  requirement_ids: [R-TRACEABLE-VERIFICATION, R-CONFLUX-EVIDENCE]

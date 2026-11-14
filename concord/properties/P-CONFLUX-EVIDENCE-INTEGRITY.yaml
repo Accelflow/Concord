@@ -1,0 +1,9 @@
+schema_version: 2
+definition:
+  id: P-CONFLUX-EVIDENCE-INTEGRITY
+  version: "1"
+  description: 固定ソース・計画・検証責務・実行ケース・元報告が一致するConflux結果だけを受理する
+  approval_status: approved
+  depends_on: [P-COMMAND-CASE-EVIDENCE]
+  implementations: []
+  obligations: []

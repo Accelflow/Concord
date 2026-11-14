@@ -1,0 +1,6 @@
+schema_version = 1
+[runner]
+program = "node"
+args = ["node_modules/vitest/vitest.mjs"]
+version = "4.1.12"
+timeout_seconds = 30

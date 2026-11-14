@@ -1,0 +1,9 @@
+schema_version: 2
+definition:
+  id: "P-REFERENCE-INTEGRITY"
+  version: "2"
+  description: "Requirement・Contract・Property・Relationの各種別内でIDが一意で、参照先が存在し、Property依存に循環がない。設定も照合する場合は検証責務が参照するコマンドIDと完全一致で登録した入力ファイルが存在する"
+  approval_status: "approved"
+  implementations: []
+  depends_on: []
+  obligations: []

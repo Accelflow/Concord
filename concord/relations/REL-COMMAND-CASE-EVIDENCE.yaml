@@ -1,0 +1,15 @@
+schema_version: 2
+definition:
+  id: REL-COMMAND-CASE-EVIDENCE
+  contract_id: C-VERIFICATION-EVIDENCE
+  property_id: P-COMMAND-CASE-EVIDENCE
+  relation: requires
+  applicability:
+    condition: 登録コマンドが必須ケースを宣言したverifyを一時リポジトリで実行する
+  implementations: [src/commands.rs, src/model.rs, src/planning.rs, src/runner.rs]
+  obligations:
+    - id: O-COMMAND-CASE-EVIDENCE
+      method: integration
+      tests:
+        - file: tests/commands.rs
+          name: structured_command_evidence_is_required_and_linked

@@ -1,0 +1,31 @@
+schema_version: 2
+definition:
+  id: "REL-EXECUTION-INTEGRITY"
+  contract_id: "C-EXECUTION"
+  property_id: "P-FAIL-CLOSED"
+  relation: "requires"
+  applicability:
+    condition: "このリポジトリの標準Rust回帰テストが、fixtureまたは一時ディレクトリ内で対象CLIの振る舞いを検証する"
+  implementations:
+    - "src/cargo_runner.rs"
+    - "src/runner.rs"
+    - "src/commands.rs"
+    - "src/engine.rs"
+    - "src/store.rs"
+  obligations:
+    -
+      id: "O-EXECUTION-INTEGRITY"
+      method: "integration"
+      tests:
+        -
+          file: "tests/cli_e2e.rs"
+          name: "unexpected_executed_cases_still_fail_closed"
+        -
+          file: "tests/cli_e2e.rs"
+          name: "execution_mutation_and_timeout_are_not_success"
+        -
+          file: "tests/rust_cli.rs"
+          name: "cargo_failed_and_ignored_obligations_are_not_success"
+        -
+          file: "tests/rust_cli.rs"
+          name: "cargo_timeout_and_input_mutation_are_inconclusive"

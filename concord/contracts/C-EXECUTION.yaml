@@ -1,0 +1,19 @@
+schema_version: 2
+definition:
+  id: "C-EXECUTION"
+  description: "実行結果を入力・関係ごとに記録する"
+  version: "7"
+  scope: "TS/JS＋Vitestと単一Rustパッケージ＋Cargo/libtestおよび登録コマンドのverifyと状態保存"
+  assumptions:
+    - "信頼するリポジトリの定義とコードを扱う"
+  preconditions:
+    - "実行するコマンドが対応する入力形式と実行環境を使う"
+    - "対象は対応版の単一Vitestプロジェクト、または単一Cargoパッケージの既定feature・ホスト上の標準libtest、または登録した任意コマンドである"
+    - "Rustの追加リポジトリ入力は、作成者が各targetのruntime_inputsとしてレビューし正確に宣言している。未確認なら全実行へ戻す"
+    - "適用条件の自然言語はレビュー済みの前提として扱い、CLIが条件成立を自動証明するとは扱わない"
+    - "ランナーと依存環境は固定lockfileに沿って準備し、対応版を利用している"
+  responsibility: "実行前後の照合で検出した入力変化・収集/実行集合の欠落・予期しない実行を成功にせず、登録コマンドの失敗・タイムアウト・起動不能を成功にしない。計画と照合できるネイティブテストの結果は同じテストIDで追跡でき、従来のケース項目と旧結果の読み込みを維持する"
+  approval_status: "approved"
+  requirement_ids:
+    - "R-LOCAL-DEVELOPMENT"
+    - "R-VERIFY-CASE-IDENTITY"

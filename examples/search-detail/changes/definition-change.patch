@@ -1,0 +1,6 @@
+--- a/concord/requirements/R-PRIVATE.yaml
++++ b/concord/requirements/R-PRIVATE.yaml
+@@ -3,2 +3,2 @@
+   id: R-PRIVATE
+-  description: Keep private documents visible only to their owners.
++  description: Only the owner may read a private document.

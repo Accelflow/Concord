@@ -1,0 +1,9 @@
+schema_version: 2
+definition:
+  id: "P-RELATION-CONTEXT"
+  version: "2"
+  description: "同じPropertyでもContractとの関係・条件・版・入力ごとに選択と結果を区別する。計画に対応するverifyのケースは同じtest_idを持ち、そのIDでexplainできる。file・name・statusの出力とtest_idのない結果の読み込みを維持する"
+  approval_status: "approved"
+  implementations: []
+  depends_on: []
+  obligations: []

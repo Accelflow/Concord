@@ -1,0 +1,9 @@
+schema_version: 2
+definition:
+  id: P-PRIVATE
+  version: "1"
+  description: An authenticated viewer cannot read a private document they do not own.
+  approval_status: approved
+  implementations: [src/access.ts]
+  depends_on: []
+  obligations: []
