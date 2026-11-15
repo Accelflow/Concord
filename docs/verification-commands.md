@@ -1,24 +1,39 @@
-# Contract・Propertyからの検証選択と任意コマンド
+# Select and run verification commands
 
-コードの依存解析は選択の入口の一つである。Contract・Property・Relationに登録した関係から、コードのimportでは到達しない統合テストやE2Eも選択する。
+Concord combines code dependency analysis, Contract and Property Relations, and
+declared command inputs. This can select integration and E2E checks even when
+the source import graph has no path to them.
 
-## 選択の規則
+## Selection rules
 
-1. 変更ファイルと、そのファイルを直接・間接に利用するファイルを求める。
-2. Property／Relationの`implementations`、検証のテストファイル、検証コマンドの`files`・`input_patterns`との対応からRelationを選択する。
-3. 選択したRelationと同じContractに属するすべてのRelationを選ぶ。同一Contractの別Propertyの検証も含む。
-4. 選ばれたPropertyを`depends_on`に挙げる上位PropertyのRelationを選ぶ。そのContract全体にも広げ、変化がなくなるまで繰り返す。
-5. 選んだRelationの検証責務を実行する。`contributes_to`ではProperty自身の統合／E2E責務も加える。
+1. Find changed files and their direct and indirect dependents.
+2. Select Relations matched by Property or Relation `implementations`, test
+   paths, or command `files` and `input_patterns`.
+3. Include the other Relations of each selected Contract.
+4. Follow reverse `depends_on` links to higher-level Properties and include
+   their Contracts. Repeat until the selection stabilizes.
+5. Run the obligations on the selected Relations. For `contributes_to`, include
+   the Property's independent integration or E2E obligations.
 
-同じPropertyを共有するだけの別Contractには自動で広げない。別Contractの振る舞いも影響を受けるなら、上位Propertyの`depends_on`で関係を明示する。Propertyの`implementations`を変更した場合は、そのPropertyを使う全Relationが直接の対象になる。旧`property_ids`もRelationに変換したうえで同じ規則を適用する。
+Sharing a Property alone does not select a different Contract. Changes to the
+Property's shared implementation do affect every Relation that uses it.
+Legacy `property_ids` are normalized to Relations before selection.
+`applicability.condition` is recorded for reviewers and never used as an
+executable filter.
 
-コマンドモードでは未変更のtsconfig・Vite/Vitest設定・環境ファイルの存在だけを理由に全実行へ戻さない。これらの設定ファイル自体、package/Cargo manifest、lockfile、pnpm workspace、concord.toml、concord/定義の変更では全登録コマンドへ広げる。この共有設定変更はfilesやimplementationsへの登録、non_runtime_pathsの指定でも除外しない。
+Command-only mode has no source dependency graph. Unknown inputs, including
+undeclared TS or JS files, force a full command run even when some commands
+are already selected. Existing Vite, Vitest, TypeScript, and environment
+configuration files alone do not force command-only fallback. Changing those
+files, manifests, lockfiles, pnpm workspace settings, or Concord definitions or
+settings does. Exact `non_runtime_paths` entries cannot override shared
+configuration changes. Native runners retain their own conservative fallback,
+which includes all configured tests and commands when the impact is uncertain.
 
-コマンドモードにはコード依存グラフがないため、宣言されていないTS/JSを含む未知入力は、ほかに実行対象が見つかっていても全実行へ戻す。non_runtime_pathsはレビュー済みの非実行入力だけを完全一致で指定する。ネイティブランナーでは引き続き設定の存在による保守的なfallbackを維持する。未知入力・依存解析の不確実性・定義／設定の変更では全テストと全登録コマンドに広げる。適用条件の自然言語`applicability.condition`は記録する前提であり、条件式として自動評価して検証を除外しない。
+## Register a command
 
-## コマンドの登録
-
-`concord.toml`で実行内容を登録する。Vitest／Cargoの設定と併用できる。コードの依存解析や既存ランナーを使わず、登録だけで運用する場合は`runner.kind = "commands"`を指定する。
+Configure commands in `concord.toml`. Commands can supplement the Vitest or
+Cargo runner. Set the runner kind to `commands` to use registered commands alone.
 
 ```toml
 schema_version = 1
@@ -34,11 +49,20 @@ files = ["e2e/document-recovery.spec.ts"]
 timeout_seconds = 300
 ```
 
-`program`と`args`はリポジトリのルートを作業ディレクトリとしてそのまま実行する。暗黙のシェル展開は行わない。必要なサービス起動・終了処理や複数コマンドは、リポジトリ内のスクリプトでまとめて登録できる。`files`には実在するリポジトリ相対ファイルを完全一致で指定する。
+Concord invokes `program` and `args` directly from the repository root.
+Use a repository script for setup, teardown, or shell operations. List
+existing repository-relative files in `files` for exact matches.
 
-`input_patterns = ["e2e/recovery/", "tests/**/*.test.ts"]` を追加すると、対象範囲のファイルを変更・追加・削除した場合もコマンドを選択する。末尾が `/` の指定はそのディレクトリ配下全体に一致する。globの `*` と `?` はそれぞれ同じ階層内の任意の文字列と1文字に一致し、独立した `**/` はゼロ階層以上に一致する。末尾の `/**` は配下のファイルに一致する。現在一致するファイルがない指定も有効で、将来の追加を検出できる。`files` と `input_patterns` は併用でき、どちらも省略したコマンドはContract・Propertyの関係に応じて選択する。選択理由には `command_input_pattern:tests/**/*.test.ts:tests/recovery.test.ts` のように指定とファイルを記録する。
+Use `input_patterns = ["e2e/recovery/", "tests/**/*.test.ts"]` to select the
+command when matching files change, are added, or are deleted. A trailing slash
+matches descendants. Within a path segment, `*` matches zero or more
+characters and `?` matches one. A standalone `**/` matches zero or more
+directory levels, and trailing `/**` matches descendants. A pattern may match
+no current files. Exact files and patterns can be combined. With neither,
+selection follows the Contract and Property relationships. A pattern match
+appears in the reasons with the pattern and path.
 
-Relationまたは合成Propertyの`obligations`からIDで参照する。
+Reference the command ID from the corresponding obligation.
 
 ```yaml
 obligations:
@@ -47,22 +71,31 @@ obligations:
     commands: [document-recovery-e2e]
 ```
 
-同じ責務に`tests`と`commands`の両方を登録でき、その場合は両方の成功を要求する。複数の責務から参照されたコマンドは1回だけ実行する。
+An obligation can require both tests and commands. A command shared by several
+obligations runs once. `concord check` in the repository root validates YAML
+and, when present, command IDs, exact input paths, and pattern syntax in
+`concord.toml`. Use `concord check concord` to check YAML alone or
+`concord check concord --config concord.toml` to specify both.
+Input paths resolve relative to the configuration file. `scan` and `plan`
+also check that exact inputs are covered by Git change detection.
 
-リポジトリのルートで `concord check` を実行すると、YAMLの形式・関係と、`concord.toml` がある場合はコマンドID、完全一致の入力ファイル、パターンの書式を照合する。テスト収集・実行や状態の書き込みは行わない。`concord check concord` はYAMLだけを検査する。定義と設定を明示する場合は `concord check concord --config concord.toml` を使う。入力パスは設定ファイルの親ディレクトリから解決し、`scan`／`plan` では完全一致の入力がGitの変更検知対象に含まれることも確認する。
+## Read command results
 
-## plan・verifyと結果
+`plan` emits `selected_commands` and `command_decisions`. Use
+`concord explain <command-id>` for the saved selection reasons. `verify`
+runs selected commands serially in registration order and records exit codes,
+statuses, durations, and stdout and stderr paths in `command_results`.
+Logs are stored in `.concord/runs/`.
 
-`plan`には`selected_commands`と、理由を付けた`command_decisions`を出力する。`concord explain <command-id>`で保存した選択理由を確認できる。`verify`はテストに加えて選択したコマンドを登録順に直列実行し、`command_results`に終了コード・状態・経過時間・標準出力／標準エラーのログパスを保存する。ログはGit管理対象外の`.concord/runs/`に置く。
+For commands without a report requirement, exit code 0 indicates success.
+Nonzero exits, launch failures, signals, timeouts, and interruptions cannot
+satisfy verification. On Unix, timeouts and interruptions stop the child
+process group. Changed inputs make the run stale. Invalid commands and
+unresolved command IDs are rejected before execution.
 
-- `report`を宣言しないコマンドは、終了コード0で成功とする。
-- 非0は失敗、起動不能・signal終了・タイムアウト・中断は未検証として非0で終了する。Unixではタイムアウト／中断時に子プロセスグループを停止する。
-- 実行前後でリポジトリ入力が変わった場合はstaleとして非0で終了する。
-- 存在しないコマンド参照・不正な登録は実行前に拒否する。
+## Report individual cases
 
-## 任意コマンドのケース結果を提出する
-
-コマンドの実行結果をケース単位で検証する場合は、登録時に必須ケースのIDを宣言する。IDはテストの完全名など、実行ごとに変わらない名前を使う。
+Declare stable case IDs when an obligation needs evidence from specific cases.
 
 ```toml
 [[commands]]
@@ -74,7 +107,8 @@ args = ["scripts/verify-recovery.py"]
 required_cases = ["document/save", "document/recover"]
 ```
 
-スクリプトはテストランナーの元の結果から実行ケースを取り出し、Concordが毎回指定する `CONCORD_COMMAND_REPORT` のファイルに次のJSONを書き込む。
+Write the report to the path in `CONCORD_COMMAND_REPORT`, using the runner's
+actual output.
 
 ```json
 {
@@ -86,19 +120,32 @@ required_cases = ["document/save", "document/recover"]
 }
 ```
 
-- ケースの状態は `passed`、`failed`、`skipped`。IDはコマンド内で一意とする。登録した必須IDはすべて報告する。追加の実行ケースも同じ形式で報告できる。
-- 終了コード0、必須ケースの存在、報告された全ケースの成功を要求する。必須ケース欠落・重複・欠損・不正な報告は結果不整合（終了コード3）とする。整合する報告に失敗やskipがある場合、またはコマンドが非0で終了した場合は成功にならない。
-- `command_results[].report`にケース、件数、元JSONのSHA-256を保存する。`obligation_results[].command_ids`から対応するコマンドを参照できる。複数の責務が同じコマンドを参照する場合も、実行と報告は一度だけ行う。
-- トップレベルの `cases` と件数はネイティブランナーの結果。任意コマンドの件数は `command_results` 内に保持する。報告ファイルは通常ファイルで上限8 MiB。
+Case IDs must be unique within the report. Include every required ID.
+Statuses are `passed`, `failed`, and `skipped`. Extra cases use the same
+format. Success requires exit code 0, every required case, and success for
+all reported cases. Missing, duplicate, incomplete, or malformed reports
+produce exit code 3. A valid report with failures or skips cannot satisfy
+verification. Use a regular file no larger than 8 MiB.
 
-スクリプトがVitest・Playwright等の結果を変換する場合は、実際の実行結果を使う。設定の必須IDをそのまま成功ケースとして書き出すと、未実行を検出できなくなる。
+`command_results[].report` records case information, counts, and the SHA-256
+of the original JSON. `obligation_results[].command_ids` links an obligation
+to its commands. Top-level `cases` and counts are for the native runner.
+Keep command case counts in their own report. A Playwright or Vitest adapter
+must convert the actual runner report so an unexecuted case stays detectable.
 
-## 計画IDを指定して実行する
+## Pin a plan
 
-同じ環境・ソース・比較元で `plan --base REF --json` の `plan_id` を取得し、`verify --base REF --expect-plan ID --json` に渡す。全体実行では両方に `--all` を付ける。再計画したIDが一致しなければテストと登録コマンドの実行前に終了する。計画には環境のfingerprintが含まれるため、環境が変わる場合は実行環境で計画を作る。
+Use the same source, base, and execution environment to generate
+`concord plan --base REF --json` and run
+`concord verify --base REF --expect-plan ID --json` with its `plan_id`.
+For a full run, pass `--all` to both. A different plan ID stops execution
+before any selected test or command runs. If the environment changes, generate
+the plan where verification will run.
 
-## このリポジトリでの利用
+## Repository example
 
-`P-VERIFICATION-WORKFLOW`は定義整合性・変更選択・実行結果などの下位Propertyに依存する。下位の変更から`C-WORKFLOW`の間接検証へ伝播し、`tests/commands.rs`と、書式、定義、選択検証に関するコマンドを選択する。コマンドから`verify`自身は再帰実行しない。
-
-`scripts/verify-self.py`は、実際のテストソース変更について選択plan／verifyを行い、そのあと全体verifyと結果を照合する。選択対象、間接Property、コマンド成功、全Relationの検証済み、終了コード0を必須にする。
+In this repository, `P-VERIFICATION-WORKFLOW` depends on Properties for
+definition integrity, selection, and run results. Lower-level changes can
+select `tests/commands.rs` and repository checks through `C-WORKFLOW`.
+The self-verification script compares selected and full runs. Commands invoked
+by `verify` should avoid recursively invoking `verify`.

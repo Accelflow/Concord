@@ -1,5 +1,7 @@
 # Concord
 
+[日本語](docs/ja/README.md)
+
 Concord is a standalone CLI that uses Git changes and relationships between
 requirements, contracts, properties, implementation, and tests to select and
 explain verification. It supports single-project TypeScript/JavaScript with

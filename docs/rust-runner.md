@@ -1,10 +1,12 @@
-# Rustのplan・verify
+# Plan and verify Rust tests
 
-Standalone 0.4.0から、単一Gitリポジトリ内の単一Cargoパッケージについて、Rustテストの収集・計画・実行と、Contract/Propertyの関係別結果に対応する。
+Concord supports collecting, selecting, and running standard Rust tests for one
+Cargo package in one Git repository. The Cargo runner reports verification by
+Contract–Property Relation.
 
-## 設定と操作
+## Configure and run
 
-対象リポジトリのルートに次の`concord.toml`を配置する。このConcordリポジトリにも同じ設定を配置済み。
+Place this configuration in the repository's `concord.toml`.
 
 ```toml
 schema_version = 1
@@ -19,7 +21,9 @@ version = "1.97.1"
 timeout_seconds = 600
 ```
 
-`kind`の省略時は従来の`vitest`。CargoアダプターはCargoとrustcの両方が1.97.1であることを確認する。ランナーの追加引数は受け付けず、既存のCargo.lockを`--locked`で使う。timeoutは各外部プロセスへ適用する。
+The default runner kind is `vitest`. The Cargo adapter checks both Cargo and rustc
+for version 1.97.1, uses the existing lockfile with `--locked`, and accepts no
+extra runner arguments. The timeout applies to each external process.
 
 ```sh
 mise exec -- cargo run --locked -- check concord --json
@@ -29,16 +33,23 @@ mise exec -- cargo run --locked -- verify --base HEAD^ --json
 mise exec -- cargo run --locked -- verify --all --base HEAD --json
 ```
 
-`HEAD^`は直前commitとの比較例。実際の変更に応じて`main`や比較したいcommitを指定する。比較元が見つからない場合はエラーにし、自動fetchしない。変更がなく選択対象もなければnoopとなるため、全体を確認したい場合は`verify --all`を使う。
+`HEAD^` compares against the previous commit. Supply an existing ref for your
+change. Use `verify --all` to run the suite even when the change selects nothing.
 
-## 収集と実行の単位
+## Collection and execution
 
-Cargo metadataでリポジトリルートの単一パッケージであることを確認し、`cargo test --locked --tests --no-run --message-format=json`でテストをコンパイルする。成功したcompiler-artifactから実行ファイルとtargetのソースパスを取得し、各実行ファイルの`--list --format terse`でテスト名を収集する。収集自体もコンパイルやbuild script等を実行するため、信頼するcheckoutで使う。
+The adapter checks package metadata and compiles tests with
+`cargo test --locked --tests --no-run --message-format=json`. It uses executable
+and target paths from compiler artifacts, then collects names with
+`--list --format terse`. Collection can run builds and build scripts, so use
+a checkout you trust.
 
-`Test.file`はCargo targetのルートソースファイル。Integration Testでは通常`tests/<target>.rs`、ライブラリ内のUnit Testでは通常`src/lib.rs`となる。別モジュールに書かれたUnit Testも、所属するlib/bin targetのファイルとして扱う。`Test.name`にはlibtestが返す完全名を使い、モジュール区切りは`::`のまま記録する。
+`Test.file` is the target root, typically `tests/<target>.rs` for integration
+tests or `src/lib.rs` for library unit tests. Use the complete libtest name,
+including its module separators `::`, in `Test.name`.
 
 ```yaml
-# 関係のdefinition.obligations内に置く参照例
+# Put this reference in the Relation definition.obligations.
 - id: O-RUST-API
   method: integration
   tests:
@@ -46,17 +57,25 @@ Cargo metadataでリポジトリルートの単一パッケージであること
       name: api
 ```
 
-実行単位はCargo test target（コンパイル済みテスト実行ファイル）で、選択したtarget内の全ケースを実行する。各targetはlibtestのpretty形式・色なし・1 threadで実行し、出力と最終集計の整合性を照合する。テスト実行ファイルは収集時のchecksumと一致することも確認する。
+Concord executes all cases in each selected Cargo test target. It checks the
+executable checksum recorded during collection and reconciles the single-threaded,
+colorless pretty output with the final libtest summary.
 
-## Rustの変更影響選択
+## Impact selection
 
-0.5.0では、Cargoが生成したcompiler-artifactに対応するrustcのdep-info（`.d`）を読み、コンパイラが実際に使用したRustモジュール・`#[path]`・`include_str!`/`include_bytes!`等のファイルからtargetへの依存関係を作る。cfg/feature/OSで有効なコンパイル入力を対象にし、独自のRust構文推測で依存を省略しない。
+Concord 0.5.0 reads rustc dep-info associated with Cargo artifacts. It traces
+actual compiler inputs, including Rust modules, `#[path]`, and inputs used by
+`include_str!` and `include_bytes!`. The active configuration, features, and OS
+determine those inputs. Shared library dependencies are tracked at crate
+granularity and can select every consumer. Tests that use `CARGO_BIN_EXE_<name>`
+depend on that binary. Concord identifies matching binary dep-info by artifact
+hash and combines dependencies for multiple matching candidates.
 
-共有ライブラリはcrate単位で扱い、ライブラリを使うtest/bin targetへ保守的に依存を張る。ライブラリ内部の一つのモジュール変更でも、全ライブラリ利用先を選ぶ場合がある。`CARGO_BIN_EXE_<name>`を使うテストには、そのバイナリtargetへの依存を追加する。通常バイナリのdep-infoはコンパイル出力と公開実行ファイルの内容hashを照合して特定し、同じ内容に対応する候補が複数あれば依存を合併する。
+### Declare runtime inputs
 
-### 実行時入力の確認
-
-コンパイラのdep-infoは、テスト実行中の`read_to_string`・fixtureディレクトリのコピー・外部コマンド等が読むファイルを網羅しない。選択を有効にするには、各テストtargetが追加で読むリポジトリ内の入力をレビューし、`concord.toml`へ宣言する。
+Dep-info covers compiler inputs. Review additional reads such as
+`read_to_string`, fixture copies, and files read by external commands. Declare
+them per target.
 
 ```toml
 [rust.runtime_inputs]
@@ -65,34 +84,49 @@ Cargo metadataでリポジトリルートの単一パッケージであること
 "tests/other.rs" = []
 ```
 
-キーは収集されるCargo targetのルートソースパス。値はリポジトリ相対のファイルパス、または末尾`/`のディレクトリ接頭辞。ディレクトリはGit管理・未追跡の索引対象ファイルへ展開し、新しいファイルの追加も選択へ反映する。`[]`は「追加のリポジトリ入力を読まないことを確認した」という宣言であり、自動解析の成功印ではない。テスト用に生成する一時プロジェクトのファイルは出力として扱う。
+Keys are collected Cargo target root paths. Values are repository-relative
+files or directory prefixes ending in `/`. Directory prefixes include indexed
+tracked or untracked inputs, including additions. An empty array records a
+review that found no extra repository inputs. Update the entry when runtime
+reads change. For unrepresentable external inputs, omit the declaration so
+Concord falls back to all targets.
 
-この宣言の完全性は作成者のレビューに依存する。コンパイル依存だけ、または実装との手動対応表だけで全利用先を網羅したとは主張しない。実行時のファイル読込みを追加・変更したときは、宣言も更新する。外部サービスや索引外の入力を使い、宣言で扱えない場合は、そのtargetの宣言を外して全実行へ戻す。
+Concord reports `rust_runtime_inputs_unreviewed` if any target lacks a
+declaration. Unknown targets and unsafe paths are errors. Missing or ambiguous
+dep-info, inputs outside the index, unknown binary dependencies, package build
+scripts, and Cargo configuration files can also force full verification.
 
-いずれかのテストtargetに宣言がなければ`rust_runtime_inputs_unreviewed`で全targetへ拡大する。不明なtarget名・安全でないパスはエラー。dep-infoの欠落/曖昧性・索引外のコンパイラ入力・不明なバイナリ依存・packageのbuild script・`.cargo/config(.toml)`の存在も、選択の根拠不足として全実行へ戻す。
+### From changes to targets
 
-### 変更からの選択
+Concord follows the graph backward from changed files and adds obligations
+required by Contract–Property Relations. Cargo manifests and lockfiles, Concord
+settings and definitions, unknown changes, unmapped Rust files, and uncertain
+additions or deletions can trigger full verification. A change to an exact
+`non_runtime_paths` entry can yield `noop` when no dependencies or other
+fallback reasons apply.
 
-変更ファイルから依存グラフを逆に辿り、影響するtest targetを選ぶ。コンパイル入力と宣言した実行時入力の両方を使う。Contract/Propertyの関係で必要な検証責務も選択へ追加する。
+For example, `tests/split_definitions.rs` reads other test sources at runtime.
+The repository declares those inputs so a change to
+`tests/definition_check.rs` can select both targets.
 
-Cargo.toml/Cargo.lock、Concord設定・定義、分類不能な変更、グラフに現れないRustソース、新規/削除等で根拠が不足する変更は全targetを選ぶ。グラフで追える新しい入力は対応するtargetを選べるが、未対応入力を黙って除外しない。`non_runtime_paths`に指定した非実行文書だけの変更では、runtime未確認の理由を適用せず、既知の依存もなければnoopになる。dep-info欠落等の他の不明理由や既知の利用先は維持する。
+## Results and supported scope
 
-このリポジトリは、fixtureを読むtargetと、定義から実装・テストを検査するtargetの実行時入力を設定済み。`tests/definition_check.rs`の変更では、コンパイル上の利用先に加えて、実行時に同ファイルを読む`tests/split_definitions.rs`も選ぶ。二つのtargetの11ケースを選択し、全49ケースと結果を比較する標準検証を持つ。
+Run artifacts include `cargo.json`, per-target stdout and stderr, and
+Relation results in `result.json`. The original libtest exit code 101 is
+preserved in `cargo.json` and maps to Concord exit code 1. Ignored cases do
+not count as passes. Missing, duplicate, unknown, or inconsistent outcomes,
+interruption, timeouts, and changed inputs or executables invalidate the run.
+A run with only ignored cases cannot satisfy verification. An unapproved
+definition can still produce exit code 4 when the tests succeed.
 
-## 結果と承認
+The supported scope is one Cargo package, default features, and host-native
+unit and integration tests using standard libtest. Workspaces with multiple
+packages, path dependencies, `harness=false`, and benchmarks are rejected.
+Doctests, example or benchmark tests, cross-compilation, and arbitrary feature
+or target selection are outside this runner's scope.
 
-`.concord/runs/<run-id>/cargo.json`に共通のケース結果と各Cargo targetの生の終了コード・集計を保存する。targetごとのstdout/stderrと、関係別の`result.json`も同じrunへ保存する。通常のテスト失敗に対するlibtestの終了コード101は、Concordの終了コード1へ正規化し、生の101はcargo.jsonへ残す。
-
-ignoredは成功に加えず、必要な検証責務がignoredなら未検証とする。収集0件、結果の欠落・重複・未知ケース、集計不一致、途中終了、timeout、入力変更、実行ファイルの変更を成功扱いにしない。全ケースがignoredで実行済みケースが0件の場合も、成功にしない。
-
-このリポジトリの自己検証では、終了コード0と全関係のverifiedを確認する。一般の未承認定義では、テストが成功しても承認不足によるunverified/終了コード4となる。適用条件の文章は記録するが自動評価しない。
-
-## 対応範囲と標準検証
-
-対応範囲は単一Cargoパッケージ・既定feature・ホスト上の標準libtestによるUnit/Integration Test。複数パッケージworkspace、path依存、`harness=false`、benchmarksは拒否する。doctest、examples/benchesのテスト、cross compilation、任意のfeature/target指定は対象に含めない。Cargoの`--tests`で収集する集合を、これらを含む全Rust検証と同一視しない。
-
-公開ソースのビルドとテストは、ルートの[README](../README.md)を参照。
-
-Cargoの成果物取得とtarget選択は[Cargo公式の外部ツール向け仕様](https://doc.rust-lang.org/cargo/reference/external-tools.html)と[cargo test仕様](https://doc.rust-lang.org/cargo/commands/cargo-test.html)、libtestの収集・出力は[Rust公式のテスト仕様](https://doc.rust-lang.org/rustc/tests/)に基づく。
-
-コンパイラ入力の根拠は[Cargoのdep-info仕様](https://doc.rust-lang.org/cargo/reference/build-cache.html#dep-info-files)と[rustcのdep-info出力仕様](https://doc.rust-lang.org/rustc/command-line-arguments.html#--emit-specifies-the-types-of-output-files-to-generate)。dep-infoはコンパイル入力の情報であり、任意の実行時依存の証明ではない。
+See the root [README](../README.md) for repository checks, the [Cargo test
+reference](https://doc.rust-lang.org/cargo/commands/cargo-test.html) and
+[libtest reference](https://doc.rust-lang.org/rustc/tests/) for runner behavior,
+and [Cargo's dep-info documentation](https://doc.rust-lang.org/cargo/reference/build-cache.html#dep-info-files)
+for compiler inputs.
