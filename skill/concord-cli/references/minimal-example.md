@@ -1,6 +1,10 @@
-# コマンド登録だけで始める最小構成
+# Minimal setup using a registered command
 
-既存の`src/storage.js`と、それを確認する`tests/storage.test.mjs`を持つリポジトリの例。パス・条件・説明・検証内容は導入先に合わせる。この例の承認状態は`proposed`なので、形式チェックに成功しても、そのままではverifyの検証済み条件を満たさない。実装とテストの対応・責任・前提をレビューしたあとで、ContractとPropertyを`approved`へ変更する。
+This example assumes an existing `src/storage.js` and
+`tests/storage.test.mjs`. Replace the paths and conditions with ones from the
+target project. Definitions start as `proposed`. Review the conditions,
+implementation, and verification mapping before setting them to `approved`.
+A definition check can succeed while approval and verification are pending.
 
 ## concord.toml
 
@@ -18,15 +22,13 @@ files = ["tests/storage.test.mjs"]
 timeout_seconds = 120
 ```
 
-このコマンドは単体・統合・E2Eなど、実際の検証方法に置き換えられる。Node.jsの実行環境とテストは事前に用意する。テスト0件やskipを拒否する必要があれば、その判定も行うスクリプトを登録する。
-
 ## concord/requirements/R-DOCUMENT.yaml
 
 ```yaml
 schema_version: 2
 definition:
   id: R-DOCUMENT
-  description: 保存した文書を再び読み出せる
+  description: A saved document can be read back.
 ```
 
 ## concord/contracts/C-STORAGE.yaml
@@ -36,11 +38,11 @@ schema_version: 2
 definition:
   id: C-STORAGE
   version: "1"
-  description: 文書の保存と読出しを提供する
-  scope: 文書保存API
-  assumptions: [保存先へアクセスできる]
-  preconditions: [文書IDと文書本文が有効である]
-  responsibility: 指定したIDの文書を保存し同じ本文を読み出せるようにする
+  description: Provide document storage and retrieval.
+  scope: Document storage API
+  assumptions: [The storage backend is accessible.]
+  preconditions: [The document ID and body are valid.]
+  responsibility: Save and return the same document body under the supplied ID.
   approval_status: proposed
   requirement_ids: [R-DOCUMENT]
 ```
@@ -52,7 +54,7 @@ schema_version: 2
 definition:
   id: P-DOCUMENT
   version: "1"
-  description: 保存した本文と読み出した本文が一致する
+  description: The retrieved document body matches the saved body.
   approval_status: proposed
   implementations: []
   depends_on: []
@@ -69,7 +71,7 @@ definition:
   property_id: P-DOCUMENT
   relation: requires
   applicability:
-    condition: 有効な文書を保存して同じIDで読み出す
+    condition: A valid document is saved and retrieved under the same ID.
   implementations: [src/storage.js]
   obligations:
     - id: O-STORAGE-ROUNDTRIP
@@ -77,6 +79,11 @@ definition:
       commands: [document-tests]
 ```
 
-`src/storage.js`の変更からRelationを選び、`document-tests`を実行できる。実際のテストが記述した性質と適用条件を確認していることは、作成者がレビューする。
+The command assumes Node.js and the existing test are installed. Use a
+script that checks the underlying report when zero executed or skipped
+cases must cause failure.
 
-上位Propertyに間接的なE2Eを結ぶ場合は、別のPropertyの`depends_on`へ`P-DOCUMENT`を指定し、その上位PropertyをContractへRelationで結ぶ。上位Relationの検証責務、または`contributes_to`で要求するProperty自身のIntegration／E2E責務に、実行コマンドや収集済みテストを登録する。依存の記述だけでテストが生成されるわけではない。
+A change to `src/storage.js` can select the Relation and execute
+`document-tests`. Review the test against the Property and applicability
+condition. For an independent check of a composed Property, declare
+`depends_on` and attach the relevant integration or E2E test or command.

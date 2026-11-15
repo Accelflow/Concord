@@ -1,5 +1,7 @@
 # Concord quickstart
 
+[日本語](docs/ja/quickstart.md)
+
 Use a Concord executable built for your operating system and architecture. A
 source build needs Rust 1.97.1. The TypeScript demo needs Git, Node.js 24.22.1,
 and pnpm 10.34.8 via Corepack.

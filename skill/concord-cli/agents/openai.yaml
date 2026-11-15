@@ -1,4 +1,4 @@
 interface:
-  display_name: "Concord 基本操作"
-  short_description: "Concordの導入・定義・変更影響による検証を案内する基本ガイド"
-  default_prompt: "$concord-cli を使って、このリポジトリへConcordを導入し、定義チェックからplan・verifyまで進めて。"
+  display_name: "Concord CLI"
+  short_description: "Set up Concord and explain verification selection"
+  default_prompt: "Use $concord-cli to set up Concord in this repository and check the definitions, plan, and verification results."
