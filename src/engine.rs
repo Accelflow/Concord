@@ -524,10 +524,23 @@ impl Engine {
             } else {
                 "vitest.json"
             });
+            let output_file = result_path.to_string_lossy();
+            // Vitest resolves its report argument with pathe, which treats a
+            // verbatim Windows drive prefix as a different path.
+            #[cfg(windows)]
+            let output_file = if matches!(
+                result_path.components().next(),
+                Some(std::path::Component::Prefix(prefix))
+                    if matches!(prefix.kind(), std::path::Prefix::VerbatimDisk(_))
+            ) {
+                output_file.strip_prefix(r"\\?\").unwrap_or(&output_file)
+            } else {
+                &output_file
+            };
             let mut args = vec![
                 "run".into(),
                 "--reporter=json".into(),
-                format!("--outputFile={}", result_path.display()),
+                format!("--outputFile={output_file}"),
             ];
             // Full relative filenames are substring filters in Vitest. Verify the exact
             // returned file and case set, so accidental extra or missing execution fails.
