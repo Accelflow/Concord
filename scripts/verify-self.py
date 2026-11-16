@@ -47,7 +47,7 @@ try:
     assert set(selected_plan['affected_relations']) == expected_selected_relations, selected_plan
     assert {c['id'] for c in selected_plan['selected_commands']} == expected_selected_commands, selected_plan
     selected_code, selected_run = invoke('selected-verify', ['verify', '--base', 'HEAD', '--expect-plan', selected_plan['plan_id']])
-    assert selected_code == selected_run['exit_code'] == 0 and selected_run['status'] == 'passed' and selected_run['passed'] == 30, selected_run
+    assert selected_code == selected_run['exit_code'] == 0 and selected_run['status'] == 'passed' and selected_run['passed'] == 31, selected_run
     assert {c['id'] for c in selected_run['command_results']} == expected_selected_commands and len(selected_run['command_results']) == 4 and all(c['status'] == 'passed' for c in selected_run['command_results']), selected_run
     assert {'P-VERIFICATION-WORKFLOW', 'P-SELECTION-COMPLETENESS'} <= set(selected_plan['affected_properties']), selected_plan
     assert selected_run['failed'] == selected_run['skipped'] == 0, selected_run

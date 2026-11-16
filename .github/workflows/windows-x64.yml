@@ -12,7 +12,7 @@ on:
       - 'tests/**'
       - 'examples/search-detail/**'
   push:
-    branches: [main, feat/windows-x64]
+    branches: [main]
     paths:
       - '.github/workflows/windows-x64.yml'
       - 'Cargo.toml'
@@ -50,7 +50,7 @@ jobs:
           cargo build --locked --release --target x86_64-pc-windows-msvc
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           ./target/x86_64-pc-windows-msvc/release/concord.exe --version
-      - name: Verify the packaged CLI against the public example
+      - name: Verify the release executable against the public example
         run: |
           $exe = (Resolve-Path ./target/x86_64-pc-windows-msvc/release/concord.exe).Path
           $demo = Join-Path $env:RUNNER_TEMP 'Concord search detail'
