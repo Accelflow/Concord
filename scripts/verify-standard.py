@@ -26,6 +26,14 @@ def run(label, argv, cwd=root):
     print(label, result.returncode, flush=True)
     if result.returncode:
         raise RuntimeError(label + ' failed; see ' + str(output / (label + '.log')))
+    if run_id := context.get('run_id'):
+        print(json.dumps({'conflux_progress': {
+            'run_id': run_id,
+            'phase': 'standard-verification',
+            'sequence': len(steps),
+            'completed': len(steps),
+            'checkpoint': label,
+        }}), flush=True)
 
 try:
     run('format', ['cargo', 'fmt', '--check'])
