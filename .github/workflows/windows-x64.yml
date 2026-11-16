@@ -1,0 +1,87 @@
+name: Windows x64
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/windows-x64.yml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - 'concord.toml'
+      - 'concord/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'examples/search-detail/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/windows-x64.yml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - 'concord.toml'
+      - 'concord/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'examples/search-detail/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-x64-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-x64:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.22.1'
+          package-manager-cache: false
+      - name: Build and exercise the native Windows executable
+        run: |
+          cargo test --locked --target x86_64-pc-windows-msvc --test commands command_timeout_stops_descendants -- --exact
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo build --locked --release --target x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./target/x86_64-pc-windows-msvc/release/concord.exe --version
+      - name: Verify the release executable against the public example
+        run: |
+          $exe = (Resolve-Path ./target/x86_64-pc-windows-msvc/release/concord.exe).Path
+          $demo = Join-Path $env:RUNNER_TEMP 'Concord search detail'
+          Copy-Item examples/search-detail $demo -Recurse
+          Push-Location $demo
+          try {
+            corepack pnpm install --frozen-lockfile --ignore-scripts
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            git init -b main
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            git add .
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            git -c user.name=Concord -c user.email=fixture@example.invalid commit -m 'Demo baseline'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $result = & $exe verify --all --base HEAD --json
+            if ($LASTEXITCODE -ne 0) {
+              Get-ChildItem .concord -Recurse -File -Filter 'run.*.log' | ForEach-Object {
+                Get-Content $_.FullName
+              }
+              throw ($result -join [Environment]::NewLine)
+            }
+            $report = $result | ConvertFrom-Json
+            if ($report.status -ne 'passed' -or $report.passed -ne 2 -or $report.failed -ne 0) {
+              throw ($result -join [Environment]::NewLine)
+            }
+          } finally {
+            Pop-Location
+          }
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: concord-windows-x64
+          path: target/x86_64-pc-windows-msvc/release/concord.exe
+          if-no-files-found: error
+          retention-days: 7

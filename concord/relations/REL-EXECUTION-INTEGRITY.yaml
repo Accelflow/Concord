@@ -32,3 +32,6 @@ definition:
         -
           file: "tests/cli_e2e.rs"
           name: "interruption_reaps_runner_and_releases_lock"
+        -
+          file: "tests/commands.rs"
+          name: "command_timeout_stops_descendants"

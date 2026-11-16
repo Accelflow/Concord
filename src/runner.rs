@@ -3,6 +3,8 @@ use crate::{
     model::{CaseResult, RunnerConfig, RunnerKind, Test},
 };
 use anyhow::{Context, Result, bail};
+#[cfg(windows)]
+use process_wrap::std::{CommandWrap, JobObject};
 use serde_json::Value;
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
@@ -94,7 +96,13 @@ pub fn execute_with_report(
     }
     #[cfg(unix)]
     cmd.process_group(0);
+    #[cfg(not(windows))]
     let mut child = cmd.spawn().context("start configured test runner")?;
+    #[cfg(windows)]
+    let mut child = CommandWrap::from(cmd)
+        .wrap(JobObject)
+        .spawn()
+        .context("start configured test runner in a Windows job")?;
     let start = Instant::now();
     loop {
         if INTERRUPTED.load(Ordering::SeqCst)
@@ -104,8 +112,23 @@ pub fn execute_with_report(
             unsafe {
                 libc::kill(-(child.id() as i32), libc::SIGKILL);
             }
-            let _ = child.kill();
-            let _ = child.wait();
+            #[cfg(not(windows))]
+            {
+                let _ = child.kill();
+                let _ = child.wait();
+            }
+            #[cfg(windows)]
+            {
+                child
+                    .start_kill()
+                    .context("terminate Windows test runner job")?;
+                // Wait on the direct process handle. Job notifications may
+                // already have been consumed by try_wait.
+                child
+                    .inner_mut()
+                    .wait()
+                    .context("reap Windows test runner")?;
+            }
             return Ok(ProcessResult {
                 exit: None,
                 stopped: true,
@@ -160,12 +183,19 @@ pub fn relative(root: &Path, path: &str) -> Result<String> {
     } else {
         root.join(p)
     };
+    // Windows checkout roots are canonical verbatim paths. Test runners can
+    // report ordinary drive paths, including drive paths with forward slashes.
+    #[cfg(windows)]
+    let p = p.canonicalize().context("resolve runner test path")?;
     let name = p
         .strip_prefix(root)
         .context("runner returned a path outside checkout")?
         .to_str()
-        .context("non UTF-8 path")?
-        .to_owned();
+        .context("non UTF-8 path")?;
+    #[cfg(windows)]
+    let name = name.replace('\\', "/");
+    #[cfg(not(windows))]
+    let name = name.to_owned();
     git::safe_path(&name)?;
     Ok(name)
 }
