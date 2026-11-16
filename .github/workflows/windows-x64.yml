@@ -1,0 +1,50 @@
+name: Windows x64
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/windows-x64.yml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - 'concord.toml'
+      - 'concord/**.yaml'
+      - 'src/**'
+      - 'tests/**'
+  push:
+    branches: [main, feat/windows-x64]
+    paths:
+      - '.github/workflows/windows-x64.yml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - 'concord.toml'
+      - 'concord/**.yaml'
+      - 'src/**'
+      - 'tests/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-x64-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-x64:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.22.1'
+          package-manager-cache: false
+      - name: Build and exercise the native Windows executable
+        run: |
+          cargo test --locked --target x86_64-pc-windows-msvc --test commands command_timeout_stops_descendants -- --exact
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo build --locked --release --target x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./target/x86_64-pc-windows-msvc/release/concord.exe --version
