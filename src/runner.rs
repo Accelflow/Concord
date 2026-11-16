@@ -183,12 +183,19 @@ pub fn relative(root: &Path, path: &str) -> Result<String> {
     } else {
         root.join(p)
     };
+    // Windows checkout roots are canonical verbatim paths. Test runners can
+    // report ordinary drive paths, including drive paths with forward slashes.
+    #[cfg(windows)]
+    let p = p.canonicalize().context("resolve runner test path")?;
     let name = p
         .strip_prefix(root)
         .context("runner returned a path outside checkout")?
         .to_str()
-        .context("non UTF-8 path")?
-        .to_owned();
+        .context("non UTF-8 path")?;
+    #[cfg(windows)]
+    let name = name.replace('\\', "/");
+    #[cfg(not(windows))]
+    let name = name.to_owned();
     git::safe_path(&name)?;
     Ok(name)
 }
