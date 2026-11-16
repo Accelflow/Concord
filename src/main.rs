@@ -76,7 +76,7 @@ fn execute(cli: &Cli) -> anyhow::Result<(Value, i32)> {
 }
 fn main() {
     let cli = Cli::parse();
-    if let Err(error) = ctrlc::set_handler(|| runner::INTERRUPTED.store(true, Ordering::SeqCst)) {
+    if let Err(error) = runner::install_interrupt_handler() {
         eprintln!("{error}");
         std::process::exit(2)
     }

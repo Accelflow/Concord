@@ -29,3 +29,6 @@ definition:
         -
           file: "tests/rust_cli.rs"
           name: "cargo_timeout_and_input_mutation_are_inconclusive"
+        -
+          file: "tests/cli_e2e.rs"
+          name: "interruption_reaps_runner_and_releases_lock"

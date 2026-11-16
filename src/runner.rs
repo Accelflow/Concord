@@ -15,6 +15,35 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 pub static INTERRUPTED: AtomicBool = AtomicBool::new(false);
+
+#[cfg(not(target_os = "macos"))]
+pub fn install_interrupt_handler() -> Result<()> {
+    ctrlc::set_handler(|| INTERRUPTED.store(true, Ordering::SeqCst))?;
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+pub fn install_interrupt_handler() -> Result<()> {
+    extern "C" fn on_interrupt(_: libc::c_int) {
+        // The only operation in the signal handler is a lock-free atomic store.
+        INTERRUPTED.store(true, Ordering::SeqCst);
+    }
+
+    // SAFETY: sigemptyset initializes the mask, the handler has the C signal
+    // handler ABI, and sigaction reads the initialized struct during the call.
+    unsafe {
+        let mut action: libc::sigaction = std::mem::zeroed();
+        action.sa_sigaction = on_interrupt as *const () as libc::sighandler_t;
+        action.sa_flags = libc::SA_RESTART;
+        if libc::sigemptyset(&mut action.sa_mask) != 0
+            || libc::sigaction(libc::SIGINT, &action, std::ptr::null_mut()) != 0
+        {
+            return Err(std::io::Error::last_os_error()).context("install SIGINT handler");
+        }
+    }
+    Ok(())
+}
+
 pub fn now() -> u128 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
