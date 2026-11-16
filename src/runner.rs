@@ -3,6 +3,8 @@ use crate::{
     model::{CaseResult, RunnerConfig, RunnerKind, Test},
 };
 use anyhow::{Context, Result, bail};
+#[cfg(windows)]
+use process_wrap::std::{CommandWrap, JobObject};
 use serde_json::Value;
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
@@ -94,7 +96,13 @@ pub fn execute_with_report(
     }
     #[cfg(unix)]
     cmd.process_group(0);
+    #[cfg(not(windows))]
     let mut child = cmd.spawn().context("start configured test runner")?;
+    #[cfg(windows)]
+    let mut child = CommandWrap::from(cmd)
+        .wrap(JobObject)
+        .spawn()
+        .context("start configured test runner in a Windows job")?;
     let start = Instant::now();
     loop {
         if INTERRUPTED.load(Ordering::SeqCst)
@@ -104,8 +112,23 @@ pub fn execute_with_report(
             unsafe {
                 libc::kill(-(child.id() as i32), libc::SIGKILL);
             }
-            let _ = child.kill();
-            let _ = child.wait();
+            #[cfg(not(windows))]
+            {
+                let _ = child.kill();
+                let _ = child.wait();
+            }
+            #[cfg(windows)]
+            {
+                child
+                    .start_kill()
+                    .context("terminate Windows test runner job")?;
+                // Wait on the direct process handle. Job notifications may
+                // already have been consumed by try_wait.
+                child
+                    .inner_mut()
+                    .wait()
+                    .context("reap Windows test runner")?;
+            }
             return Ok(ProcessResult {
                 exit: None,
                 stopped: true,

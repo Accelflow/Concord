@@ -7,9 +7,10 @@ on:
       - 'Cargo.lock'
       - 'rust-toolchain.toml'
       - 'concord.toml'
-      - 'concord/**.yaml'
+      - 'concord/**'
       - 'src/**'
       - 'tests/**'
+      - 'examples/search-detail/**'
   push:
     branches: [main, feat/windows-x64]
     paths:
@@ -18,9 +19,10 @@ on:
       - 'Cargo.lock'
       - 'rust-toolchain.toml'
       - 'concord.toml'
-      - 'concord/**.yaml'
+      - 'concord/**'
       - 'src/**'
       - 'tests/**'
+      - 'examples/search-detail/**'
 
 permissions:
   contents: read
@@ -48,3 +50,33 @@ jobs:
           cargo build --locked --release --target x86_64-pc-windows-msvc
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           ./target/x86_64-pc-windows-msvc/release/concord.exe --version
+      - name: Verify the packaged CLI against the public example
+        run: |
+          $exe = (Resolve-Path ./target/x86_64-pc-windows-msvc/release/concord.exe).Path
+          $demo = Join-Path $env:RUNNER_TEMP 'Concord search detail'
+          Copy-Item examples/search-detail $demo -Recurse
+          Push-Location $demo
+          try {
+            corepack pnpm install --frozen-lockfile --ignore-scripts
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            git init -b main
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            git add .
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            git -c user.name=Concord -c user.email=fixture@example.invalid commit -m 'Demo baseline'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $result = & $exe verify --all --base HEAD --json
+            if ($LASTEXITCODE -ne 0) { throw ($result -join [Environment]::NewLine) }
+            $report = $result | ConvertFrom-Json
+            if ($report.status -ne 'passed' -or $report.passed -ne 2 -or $report.failed -ne 0) {
+              throw ($result -join [Environment]::NewLine)
+            }
+          } finally {
+            Pop-Location
+          }
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: concord-windows-x64
+          path: target/x86_64-pc-windows-msvc/release/concord.exe
+          if-no-files-found: error
+          retention-days: 7
