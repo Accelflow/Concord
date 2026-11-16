@@ -1,4 +1,0 @@
-schema_version: 2
-definition:
-  id: R-TRACEABLE-VERIFICATION
-  description: 任意コマンドが報告する必須ケースの成否を照合し、結果を検証責務から追跡できる

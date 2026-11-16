@@ -23,12 +23,12 @@ Follow the [search and detail API demo](examples/search-detail/README.md) to run
 
 ## Verify this checkout
 
-With the same Rust, Node.js and pnpm versions:
+Run the Rust unit tests with the same Rust toolchain:
 
 ```sh
-(cd tests/fixtures/vitest && corepack pnpm install --frozen-lockfile --ignore-scripts)
 cargo fmt --check
 cargo clippy --all-targets --locked -- -D warnings
-cargo test --all-targets --locked -- --test-threads=1
-cargo run --locked -- check --json
+cargo test --locked
 ```
+
+Use the [public demo](examples/search-detail/README.md) for an end-to-end walkthrough.

@@ -1,9 +1,0 @@
-schema_version: 2
-definition:
-  id: "P-FAIL-CLOSED"
-  version: "2"
-  description: "変更影響が不明な場合は対応する全テストへ広げる。入力や実行結果の整合性を確認できない場合は検証成功と判定しない"
-  approval_status: "approved"
-  implementations: []
-  depends_on: []
-  obligations: []

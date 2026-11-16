@@ -142,10 +142,6 @@ For a full run, pass `--all` to both. A different plan ID stops execution
 before any selected test or command runs. If the environment changes, generate
 the plan where verification will run.
 
-## Repository example
+## Avoid recursive verification
 
-In this repository, `P-VERIFICATION-WORKFLOW` depends on Properties for
-definition integrity, selection, and run results. Lower-level changes can
-select `tests/commands.rs` and repository checks through `C-WORKFLOW`.
-The self-verification script compares selected and full runs. Commands invoked
-by `verify` should avoid recursively invoking `verify`.
+Commands invoked by `verify` should avoid recursively invoking `verify`.

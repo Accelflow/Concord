@@ -90,4 +90,4 @@ concord verify --base main --json
 
 ## Concord's own repository
 
-The CLI lives in `src/`, regression tests in `tests/`, and the Vitest fixture in `tests/fixtures/vitest/`. Concord's own definitions live in `concord/`. The `examples/` directory holds standalone examples that you can copy to a project. See the root [README](../README.md) for the contributor verification commands.
+The CLI lives in `src/`. The `examples/` directory holds standalone examples with their own definitions and tests that you can copy to a project. See the root [README](../README.md) for the contributor verification commands.

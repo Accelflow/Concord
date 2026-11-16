@@ -1,4 +1,0 @@
-schema_version: 2
-definition:
-  id: R-VERIFY-CASE-IDENTITY
-  description: verifyのネイティブテスト結果を計画のテストIDで追跡し、失敗ケースのIDをexplainに渡せる。検索・詳細APIの差分検証デモで、検索実装の変更、共通権限判定の変更、定義変更による選定範囲と、選択実行・全体実行での失敗検出を再現できる。既存のケース項目と旧結果の読み込みを維持する。

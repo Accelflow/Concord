@@ -1,9 +1,0 @@
-schema_version: 2
-definition:
-  id: "P-READ-ONLY"
-  version: "1"
-  description: "文書チェックが定義を書き換えず、Git・Node.js・状態DBを要求しない"
-  approval_status: "approved"
-  implementations: []
-  depends_on: []
-  obligations: []

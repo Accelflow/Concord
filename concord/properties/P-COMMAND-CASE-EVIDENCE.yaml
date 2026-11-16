@@ -1,8 +1,0 @@
-schema_version: 2
-definition:
-  id: P-COMMAND-CASE-EVIDENCE
-  version: "1"
-  description: 構造化報告の必須ケースが揃い、実行したケースと成否がコマンドを参照する責務からたどれる
-  approval_status: approved
-  implementations: []
-  obligations: []

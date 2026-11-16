@@ -1,4 +1,0 @@
-schema_version: 2
-definition:
-  id: R-CONFLUX-EVIDENCE
-  description: Confluxの固定ソースとrunから、同じ計画で実行したテスト・登録コマンド・検証責務を追跡できる

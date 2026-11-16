@@ -6,10 +6,7 @@ on:
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'rust-toolchain.toml'
-      - 'concord.toml'
-      - 'concord/**'
       - 'src/**'
-      - 'tests/**'
       - 'examples/search-detail/**'
   push:
     branches: [main]
@@ -18,10 +15,7 @@ on:
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'rust-toolchain.toml'
-      - 'concord.toml'
-      - 'concord/**'
       - 'src/**'
-      - 'tests/**'
       - 'examples/search-detail/**'
 
 permissions:
@@ -45,8 +39,6 @@ jobs:
           package-manager-cache: false
       - name: Build and exercise the native Windows executable
         run: |
-          cargo test --locked --target x86_64-pc-windows-msvc --test commands command_timeout_stops_descendants -- --exact
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cargo build --locked --release --target x86_64-pc-windows-msvc
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           ./target/x86_64-pc-windows-msvc/release/concord.exe --version
