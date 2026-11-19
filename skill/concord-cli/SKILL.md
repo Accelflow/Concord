@@ -1,6 +1,6 @@
 ---
 name: concord-cli
-description: Set up Concord, define Requirements, Contracts, Properties, and Relations, register verification commands, or use check, scan, plan, verify, and explain to inspect a project's verification.
+description: Set up Concord, define Requirements, Contracts, Properties, and Relations, register verification commands, or use check, scan, plan, verify, and explain to inspect verification and review requirements for potential conflicts.
 ---
 
 # Concord CLI
@@ -54,3 +54,12 @@ To pin execution to a plan, pass its `plan_id` to `verify --expect-plan ID` with
 Compare representative changes against expected selections and a full run when adopting selection. A change affecting one Relation can expand within its Contract and to dependent Properties. A change to a shared Property implementation can select all its Relations. Uncertain impact or shared configuration changes can trigger full verification.
 
 Read `mode`, selected files and commands, affected Relations, and fallback reasons in the plan. Read `status`, input integrity, case and command results, and per-Relation obligations and Property results in the run. A `noop` can exit 0 without executing tests. Exit codes are 1 for failed tests or commands, 2 for input or collection errors, 3 for interrupted or inconsistent verification, and 4 for a verification gap. Use a failed native case's `test_id` or a registered command ID with `explain`. Review run artifacts in `.concord/runs/<run-id>/` before sharing them.
+
+## Review requirements for conflicts
+
+Use `concord check` to establish that definitions and references are valid. A passing check does not establish that natural-language specifications are compatible.
+
+1. Confirm the revision and follow each relevant Requirement to its Contracts. Compare Relations that share a Property, or Contracts that describe the same operation or refer to the same implementation or test. An overlap identifies a candidate to inspect.
+2. Read each Contract's command, scope and preconditions and each Relation's `applicability.condition`. Find a concrete input, environment and state where both apply, then compare the required outcomes. Different conditions can make both requirements satisfiable. If their scope is unclear, report the ambiguity.
+3. Compare the wording with the linked obligations, tests and implementation. If needed, reproduce the behavior in a temporary repository with minimal inputs and record the command and result. For example, run different CLI commands against the same legacy definition to distinguish compatibility loading from format validation.
+4. Report the definition IDs and files, the relevant wording, the overlapping conditions and the observed result. Distinguish incompatible requirements, differences between specification and implementation, and ambiguous scope. When a compatible version can generate the network HTML, include selection URLs from the graph for that revision. Otherwise, cite the source files and IDs.
